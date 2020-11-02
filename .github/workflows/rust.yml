@@ -1,0 +1,30 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install FFTW
+        run: sudo apt-get install -y libfftw3-dev libssl-dev
+      - name: Rustc version
+        run: rustc --version
+      - name: Cargo version
+        run: cargo --version
+      - name: Build Debug
+        run: cargo build --verbose
+      - name: Build Release
+        run: cargo build --verbose --release
+      - name: Run tests
+        run: RUSTFLAGS="-C target-cpu=native" cargo test --verbose --release
