@@ -16,5 +16,5 @@ z8z-ks=[]
 z16z-ks=[]
 
 [dependencies]
-concrete="^0.1"
+concrete="=0.1.5"
 colored="2.0.0"
