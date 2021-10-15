@@ -1,11 +1,23 @@
 //! A module containing a generic demonstration of computations over encrypted Z/qZ numbers.
 use colored::Colorize;
 #[allow(unused)]
-use concrete::crypto_api::{LWEParams, LWE128_1024, LWE128_750, RLWE128_1024_1, RLWE128_2048_1};
+use concrete::{
+    lwe_params::{
+        LWEParams,
+        LWE128_1024,
+        LWE128_750,
+    },
+    rlwe_params::{
+        RLWE128_1024_1,
+        RLWE128_2048_1,
+    },
+};
+
 use std::convert::TryInto;
 
 #[macro_use]
 mod zqz;
+
 use zqz::keys::EncryptKey;
 use zqz::max::max;
 

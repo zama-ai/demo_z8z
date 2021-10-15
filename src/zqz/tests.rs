@@ -1,7 +1,14 @@
 use crate::PARAMS;
 use crate::zqz;
 use crate::zqz::keys::EncryptKey;
-use concrete::core_api::math::Random;
+use concrete_core::math::{
+    random::{
+        RandomGenerator,
+    },
+    tensor::{
+        Tensor
+    },
+};
 
 #[allow(unused_macros)]
 macro_rules! random_index {
@@ -9,9 +16,9 @@ macro_rules! random_index {
         if $max == 0 {
             (0 as usize)
         } else {
-            let mut rs = vec![0 as u32; 1];
-            Random::rng_uniform(&mut rs);
-            (rs[0] % ($max as u32)) as usize
+            let mut rs = Tensor::allocate(0, 1);
+            RandomGenerator::new(None).fill_tensor_with_random_uniform(&mut rs);
+            (rs.get_element(0) % ($max as u32)) as usize
         }
     }};
 }
@@ -490,11 +497,11 @@ fn test_max_cst_rev(i: usize, sk: &EncryptKey) -> usize {
 #[test]
 fn test_homomorphic_key() {
     let sk = if !EncryptKey::keys_exist(&PARAMS.gen_prefix()) {
-            let key = EncryptKey::new();
-            key.save_to_files(&PARAMS.gen_prefix());
-            key
-        } else {
-            EncryptKey::load_from_files(&PARAMS.gen_prefix())
+        let key = EncryptKey::new();
+        key.save_to_files(&PARAMS.gen_prefix());
+        key
+    } else {
+        EncryptKey::load_from_files(&PARAMS.gen_prefix())
     };
 
     // let sk = zqz::setup_load();

@@ -1,7 +1,14 @@
 //! A module containing the different kind of keys used in the program.
 use crate::zqz;
 use crate::PARAMS;
-use concrete::crypto_api;
+use concrete::{
+    lwe,
+    lwe_secret_key,
+    rlwe_secret_key,
+    lwe_bsk,
+    encoder,
+    lwe_ksk,
+};
 use std::rc::Rc;
 
 const SECRET_FILE: &str = "secret_key.json";
@@ -12,14 +19,14 @@ const KEYSWITCHING_FILE: &str = "keyswitching_key.txt";
 /// ciphertext.
 #[derive(Debug, PartialEq)]
 pub struct HomomorphicKey {
-    pub(super) bootstrapping: crypto_api::LWEBSK,
-    pub(super) keyswitching: crypto_api::LWEKSK,
+    pub(super) bootstrapping: lwe_bsk::LWEBSK,
+    pub(super) keyswitching: lwe_ksk::LWEKSK,
 }
 
 /// A secret key available only to the user side, allowing to encrypt ant decrypt data.
 #[derive(Debug, PartialEq)]
 pub struct EncryptKey {
-    pub(super) secret: crypto_api::LWESecretKey,
+    pub(super) secret: lwe_secret_key::LWESecretKey,
     pub(super) evaluation: Rc<HomomorphicKey>,
 }
 
@@ -27,25 +34,24 @@ impl EncryptKey {
     /// Generates a new encrypt key
     pub fn new() -> EncryptKey {
         // We generate the lwe secret key
-        let rlwe_sk: crypto_api::RLWESecretKey =
-            crypto_api::RLWESecretKey::new(&PARAMS.rlwe_setting);
-        let lwe_sk: crypto_api::LWESecretKey = if PARAMS.with_ks {
-            crypto_api::LWESecretKey::new(&PARAMS.lwe_setting)
+        let rlwe_sk: rlwe_secret_key::RLWESecretKey = rlwe_secret_key::RLWESecretKey::new(&PARAMS.rlwe_setting);
+        let lwe_sk: lwe_secret_key::LWESecretKey = if PARAMS.with_ks {
+            lwe_secret_key::LWESecretKey::new(&PARAMS.lwe_setting)
         } else {
             rlwe_sk.to_lwe_secret_key()
         };
         // We generats the bootstrapping and keyswitching keys
-        let bsk: crypto_api::LWEBSK =
-            crypto_api::LWEBSK::new(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
-        let ksk: crypto_api::LWEKSK = if PARAMS.with_ks {
-            crypto_api::LWEKSK::new(
+        let bsk: lwe_bsk::LWEBSK =
+            lwe_bsk::LWEBSK::new(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
+        let ksk: lwe_ksk::LWEKSK = if PARAMS.with_ks {
+            lwe_ksk::LWEKSK::new(
                 &rlwe_sk.to_lwe_secret_key(),
                 &lwe_sk,
                 PARAMS.ks_base_log,
                 PARAMS.ks_level,
             )
         } else {
-            crypto_api::LWEKSK::zero(
+            lwe_ksk::LWEKSK::zero(
                 &rlwe_sk.to_lwe_secret_key(),
                 &lwe_sk,
                 PARAMS.ks_base_log,
@@ -68,14 +74,13 @@ impl EncryptKey {
     #[allow(dead_code)]
     pub fn new_zero() -> EncryptKey {
         // We generate the lwe secret key
-        let rlwe_sk: crypto_api::RLWESecretKey =
-            crypto_api::RLWESecretKey::new(&PARAMS.rlwe_setting);
-        let lwe_sk: crypto_api::LWESecretKey = rlwe_sk.to_lwe_secret_key();
+        let rlwe_sk : rlwe_secret_key::RLWESecretKey = rlwe_secret_key::RLWESecretKey::new(&PARAMS.rlwe_setting);
+        let lwe_sk: lwe_secret_key::LWESecretKey = rlwe_sk.to_lwe_secret_key();
         // We generats the bootstrapping and keyswitching keys
-        let bsk: crypto_api::LWEBSK =
-            crypto_api::LWEBSK::zero(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
-        let ksk: crypto_api::LWEKSK =
-            crypto_api::LWEKSK::zero(&lwe_sk, &lwe_sk, PARAMS.ks_base_log, PARAMS.ks_level);
+        let bsk: lwe_bsk::LWEBSK =
+            lwe_bsk::LWEBSK::zero(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
+        let ksk: lwe_ksk::LWEKSK =
+            lwe_ksk::LWEKSK::zero(&lwe_sk, &lwe_sk, PARAMS.ks_base_log, PARAMS.ks_level);
         // We pack the homomorphic keys
         let hk = HomomorphicKey {
             bootstrapping: bsk,
@@ -112,10 +117,10 @@ impl EncryptKey {
     /// Loads the encryption keys from files
     pub fn load_from_files(prefix: &str) -> EncryptKey {
         let secret_key =
-            crypto_api::LWESecretKey::load(format!("{}_{}", prefix, SECRET_FILE).as_str())
+            lwe_secret_key::LWESecretKey::load(format!("{}_{}", prefix, SECRET_FILE).as_str())
                 .expect("No Secret Key File");
-        let bsk = crypto_api::LWEBSK::load(format!("{}_{}", prefix, BOOTSTRAPPING_FILE).as_str());
-        let ksk = crypto_api::LWEKSK::load(format!("{}_{}", prefix, KEYSWITCHING_FILE).as_str());
+        let bsk = lwe_bsk::LWEBSK::load(format!("{}_{}", prefix, BOOTSTRAPPING_FILE).as_str());
+        let ksk = lwe_ksk::LWEKSK::load(format!("{}_{}", prefix, KEYSWITCHING_FILE).as_str());
         let hk = HomomorphicKey {
             bootstrapping: bsk,
             keyswitching: ksk,
@@ -129,16 +134,16 @@ impl EncryptKey {
     /// Encrypt the given message
     pub fn encrypt(&self, message: usize) -> zqz::ciphertext::Ciphertext {
         let m = message % PARAMS.modulo;
-        let encoder: crypto_api::Encoder = crypto_api::Encoder::new_rounding_context(
+        let encoder: encoder::Encoder = encoder::Encoder::new_rounding_context(
             0.,
             PARAMS.max,
             PARAMS.nb_bit_precision,
             PARAMS.nb_bit_padding,
         )
-        .unwrap();
+            .unwrap();
 
-        let ct: crypto_api::LWE =
-            crypto_api::LWE::encode_encrypt(&self.secret, m as f64, &encoder).unwrap();
+        let ct: lwe::LWE =
+            lwe::LWE::encode_encrypt(&self.secret, m as f64, &encoder).unwrap();
         zqz::ciphertext::Ciphertext {
             ciphertext: ct,
             evaluation_key: self.evaluation.clone(),
