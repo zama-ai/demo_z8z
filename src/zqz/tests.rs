@@ -1,8 +1,20 @@
 use crate::PARAMS;
 use crate::zqz;
 use crate::zqz::keys::EncryptKey;
-use concrete_core::*;
-use concrete::*;
+
+
+// #[allow(unused_macros)]
+// macro_rules! random_index {
+//     ($max: expr) => {{
+//         if $max == 0 {
+//             (0 as usize)
+//         } else {
+//             let mut rs = vec![0 as u32; 1];
+//             rng_uniform(&mut rs);
+//             (rs[0] % ($max as u32)) as usize
+//         }
+//     }};
+// }
 
 #[allow(unused_macros)]
 macro_rules! random_index {
@@ -10,8 +22,9 @@ macro_rules! random_index {
         if $max == 0 {
             (0 as usize)
         } else {
-            let mut rs = vec![0 as u32; 1];
-            rng_uniform(&mut rs);
+            let rs: Vec<u32> = concrete_core::math::random::RandomGenerator::new(None)
+                .random_uniform_tensor(1)
+                .into_container();
             (rs[0] % ($max as u32)) as usize
         }
     }};

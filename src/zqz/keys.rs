@@ -1,7 +1,7 @@
 //! A module containing the different kind of keys used in the program.
 use crate::zqz;
 use crate::PARAMS;
-use concrete::*;
+use concrete;
 use std::rc::Rc;
 
 const SECRET_FILE: &str = "secret_key.json";
@@ -12,14 +12,14 @@ const KEYSWITCHING_FILE: &str = "keyswitching_key.txt";
 /// ciphertext.
 #[derive(Debug, PartialEq)]
 pub struct HomomorphicKey {
-    pub(super) bootstrapping: LWEBSK,
-    pub(super) keyswitching: LWEKSK,
+    pub(super) bootstrapping: concrete::LWEBSK,
+    pub(super) keyswitching: concrete::LWEKSK,
 }
 
 /// A secret key available only to the user side, allowing to encrypt ant decrypt data.
 #[derive(Debug, PartialEq)]
 pub struct EncryptKey {
-    pub(super) secret:  LWESecretKey,
+    pub(super) secret:concrete::LWESecretKey,
     pub(super) evaluation: Rc<HomomorphicKey>,
 }
 
@@ -27,25 +27,25 @@ impl EncryptKey {
     /// Generates a new encrypt key
     pub fn new() -> EncryptKey {
         // We generate the lwe secret key
-        let rlwe_sk:  RLWESecretKey =
-             RLWESecretKey::new(&PARAMS.rlwe_setting);
-        let lwe_sk:  LWESecretKey = if PARAMS.with_ks {
-             LWESecretKey::new(&PARAMS.lwe_setting)
+        let rlwe_sk:concrete::RLWESecretKey =
+        concrete::RLWESecretKey::new(&PARAMS.rlwe_setting);
+        let lwe_sk:concrete::LWESecretKey = if PARAMS.with_ks {
+            concrete::LWESecretKey::new(&PARAMS.lwe_setting)
         } else {
             rlwe_sk.to_lwe_secret_key()
         };
         // We generats the bootstrapping and keyswitching keys
-        let bsk:  LWEBSK =
-             LWEBSK::new(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
-        let ksk:  LWEKSK = if PARAMS.with_ks {
-             LWEKSK::new(
+        let bsk:  concrete::LWEBSK =
+        concrete::LWEBSK::new(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
+        let ksk:  concrete::LWEKSK = if PARAMS.with_ks {
+            concrete::LWEKSK::new(
                 &rlwe_sk.to_lwe_secret_key(),
                 &lwe_sk,
                 PARAMS.ks_base_log,
                 PARAMS.ks_level,
             )
         } else {
-             LWEKSK::zero(
+            concrete::LWEKSK::zero(
                 &rlwe_sk.to_lwe_secret_key(),
                 &lwe_sk,
                 PARAMS.ks_base_log,
@@ -68,14 +68,14 @@ impl EncryptKey {
     #[allow(dead_code)]
     pub fn new_zero() -> EncryptKey {
         // We generate the lwe secret key
-        let rlwe_sk:  RLWESecretKey =
-             RLWESecretKey::new(&PARAMS.rlwe_setting);
-        let lwe_sk:  LWESecretKey = rlwe_sk.to_lwe_secret_key();
+        let rlwe_sk:  concrete::RLWESecretKey =
+        concrete::RLWESecretKey::new(&PARAMS.rlwe_setting);
+        let lwe_sk:  concrete::LWESecretKey = rlwe_sk.to_lwe_secret_key();
         // We generats the bootstrapping and keyswitching keys
-        let bsk:  LWEBSK =
-             LWEBSK::zero(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
-        let ksk:  LWEKSK =
-             LWEKSK::zero(&lwe_sk, &lwe_sk, PARAMS.ks_base_log, PARAMS.ks_level);
+        let bsk:  concrete::LWEBSK =
+        concrete::LWEBSK::zero(&lwe_sk, &rlwe_sk, PARAMS.bs_base_log, PARAMS.bs_level);
+        let ksk:  concrete::LWEKSK =
+        concrete::LWEKSK::zero(&lwe_sk, &lwe_sk, PARAMS.ks_base_log, PARAMS.ks_level);
         // We pack the homomorphic keys
         let hk = HomomorphicKey {
             bootstrapping: bsk,
@@ -112,10 +112,10 @@ impl EncryptKey {
     /// Loads the encryption keys from files
     pub fn load_from_files(prefix: &str) -> EncryptKey {
         let secret_key =
-             LWESecretKey::load(format!("{}_{}", prefix, SECRET_FILE).as_str())
+        concrete::LWESecretKey::load(format!("{}_{}", prefix, SECRET_FILE).as_str())
                 .expect("No Secret Key File");
-        let bsk =  LWEBSK::load(format!("{}_{}", prefix, BOOTSTRAPPING_FILE).as_str());
-        let ksk =  LWEKSK::load(format!("{}_{}", prefix, KEYSWITCHING_FILE).as_str());
+        let bsk =  concrete::LWEBSK::load(format!("{}_{}", prefix, BOOTSTRAPPING_FILE).as_str());
+        let ksk =  concrete::LWEKSK::load(format!("{}_{}", prefix, KEYSWITCHING_FILE).as_str());
         let hk = HomomorphicKey {
             bootstrapping: bsk,
             keyswitching: ksk,
@@ -129,7 +129,7 @@ impl EncryptKey {
     /// Encrypt the given message
     pub fn encrypt(&self, message: usize) -> zqz::ciphertext::Ciphertext {
         let m = message % PARAMS.modulo;
-        let encoder:  Encoder =  Encoder::new_rounding_context(
+        let encoder:  concrete::Encoder =  concrete::Encoder::new_rounding_context(
             0.,
             PARAMS.max,
             PARAMS.nb_bit_precision,
@@ -137,8 +137,8 @@ impl EncryptKey {
         )
         .unwrap();
 
-        let ct:  LWE =
-             LWE::encode_encrypt(&self.secret, m as f64, &encoder).unwrap();
+        let ct:  concrete::LWE =
+        concrete::LWE::encode_encrypt(&self.secret, m as f64, &encoder).unwrap();
         zqz::ciphertext::Ciphertext {
             ciphertext: ct,
             evaluation_key: self.evaluation.clone(),

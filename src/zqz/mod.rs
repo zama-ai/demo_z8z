@@ -1,5 +1,5 @@
 // A module allowing to perform encrypted computations on Z/qZ.
-use concrete::*;
+use concrete;
 
 
 
@@ -20,8 +20,8 @@ pub struct Parameters {
     pub bs_level: usize,
     pub ks_base_log: usize,
     pub ks_level: usize,
-    pub rlwe_setting:  RLWEParams,
-    pub lwe_setting:  LWEParams,
+    pub rlwe_setting:  concrete::RLWEParams,
+    pub lwe_setting:  concrete::LWEParams,
     pub with_ks: bool,
 }
 
