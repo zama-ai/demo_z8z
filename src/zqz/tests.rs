@@ -1,7 +1,8 @@
 use crate::PARAMS;
 use crate::zqz;
 use crate::zqz::keys::EncryptKey;
-use concrete::core_api::math::Random;
+use concrete_core::math::random::RandomGenerator;
+
 
 #[allow(unused_macros)]
 macro_rules! random_index {
@@ -9,9 +10,8 @@ macro_rules! random_index {
         if $max == 0 {
             (0 as usize)
         } else {
-            let mut rs = vec![0 as u32; 1];
-            Random::rng_uniform(&mut rs);
-            (rs[0] % ($max as u32)) as usize
+            let rs = RandomGenerator::new(None).random_uniform::<u32>();
+            (rs % ($max as u32)) as usize
         }
     }};
 }

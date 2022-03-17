@@ -1,7 +1,10 @@
 //! A module containing a ciphertext structure.
 use crate::zqz;
 use crate::PARAMS;
-use concrete::crypto_api;
+use concrete::lwe::LWE;
+use concrete::encoder::Encoder;
+use concrete::lwe_bsk::LWEBSK;
+use concrete::lwe_ksk::LWEKSK;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 use std::rc::Rc;
 use zqz::keys::HomomorphicKey;
@@ -10,17 +13,17 @@ use zqz::max::Max;
 /// An encrypted message.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ciphertext {
-    pub(super) ciphertext: crypto_api::LWE,
+    pub(super) ciphertext: LWE,
     pub(super) evaluation_key: Rc<HomomorphicKey>,
 }
 
 fn bs_ks<F: Fn(f64) -> f64>(
-    ciphertext: &crypto_api::LWE,
-    bootstrapping_key: &crypto_api::LWEBSK,
+    ciphertext: &LWE,
+    bootstrapping_key: &LWEBSK,
     func: F,
-    encoder: &crypto_api::Encoder,
-    keyswitching_key: &crypto_api::LWEKSK,
-) -> crypto_api::LWE {
+    encoder: &Encoder,
+    keyswitching_key: &LWEKSK,
+) -> LWE {
     let res = ciphertext
         .bootstrap_with_function(bootstrapping_key, func, encoder)
         .unwrap();
@@ -84,7 +87,7 @@ impl Add<usize> for &Ciphertext {
     type Output = Ciphertext;
 
     fn add(self, other: usize) -> Self::Output {
-        let res: crypto_api::LWE = self
+        let res: LWE = self
             .ciphertext
             .add_constant_dynamic_encoder(other as f64)
             .unwrap();
@@ -144,7 +147,7 @@ impl Sub<usize> for &Ciphertext {
     type Output = Ciphertext;
 
     fn sub(self, other: usize) -> Self::Output {
-        let res: crypto_api::LWE = self
+        let res: LWE = self
             .ciphertext
             .add_constant_dynamic_encoder(-(other as f64))
             .unwrap();
